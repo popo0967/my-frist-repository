@@ -13,17 +13,17 @@ test:418個のデータ
 内容
 ### 変数解説
 
-* **PassengerId**: 乗客を識別するための固有ID。
+* **PassengerId**: 乗客を識別するための固有ID。(削除)
 * **Survived**: 生存フラグ（0 = 死亡、1 = 生存）。**【目的変数】**
 * **Pclass**: チケットのクラス（1 = 1等、2 = 2等、3 = 3等）。社会経済的地位の指標。
-* **Name**: 乗客の氏名。
+* **Name**: 乗客の氏名。(削除)
 * **Sex**: 性別（male = 男性、female = 女性）。
 * **Age**: 年齢。
 * **SibSp**: 同乗している兄弟（Siblings）または配偶者（Spouses）の数。
 * **Parch**: 同乗している両親（Parents）または子供（Children）の数。
-* **Ticket**: チケット番号。
+* **Ticket**: チケット番号。(削除)
 * **Fare**: 旅客運賃。
-* **Cabin**: 客室番号。
+* **Cabin**: 客室番号。(欠損が多いため削除)
 * **Embarked**: 出港地（C = Cherbourg、Q = Queenstown、S = Southampton）。
 
 ### モデルの説明
