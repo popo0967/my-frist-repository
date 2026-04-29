@@ -183,6 +183,7 @@ lgb.LGBMClassifierにおいては、これは個別で設定する必要があ�
 
 
 参考サイト・論文
+
 https://qiita.com/FukuharaYohei/items/2b4b4da832cb9b234390
 
 https://datawokagaku.com/lightgbm/
