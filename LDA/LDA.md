@@ -2,8 +2,8 @@
 
 ## 概要
 本ドキュメントは、20 Newsgroupsに対して、LDAモデルを適用してみるものです。
-モチベーションとして、変分推論の研究を大学院でしていて、Variational Inference: A Review for Statisticiansの論文で適用例があり、簡単に作ってみようと思ったからです。
-どこかで自分で作ってみたいと思います(比較的簡単に作れそうなので...)
+モチベーションとして、変分推論の研究を大学院でしていて、Variational Inference: A Review for Statisticiansの論文で適用例があり、実装してみようと思ったからです。
+また、どこかで自作で作ってみたいと思います(比較的簡単に作れそうなので...)
 
 ---
 ## 1. 使用するデータセット：「20 Newsgroups」
@@ -88,6 +88,7 @@ $$p(\mathbf{Z}, \Theta, \Phi \mid \mathbf{W}, \alpha, \beta) = \frac{p(\mathbf{W
     - 座標上昇法を用いた変分推論。
     - 複雑な確率分布を、扱いやすい分布で近似してKLダイバージェンスを最小化する。
     - 「片方を固定してもう片方を解く」を交互に繰り返すピント調整プロセス。
+    
 **SVI (Stochastic Variational Inference)**:
     - オンライン学習（`learning_method='online'`）。
     - 全データを一度に見るのではなく、ミニバッチ単位で学習する。
