@@ -19,81 +19,79 @@
 
 ### 2.1 モデル設定
 
-今回対象とする階層モデルは、各クラスターの観測分散が1に固定され、混合比率が一様であると仮定したシンプルな1次元GMMです。$n$個の観測データ $\mathbf{x} = \{x_1, \dots, x_n\}$ に対し、潜在変数として各データの所属クラスターを示すワンホットベクトル $\mathbf{c} = \{c_1, \dots, c_n\}$ と、$K$個のクラスターの平均パラメーター $ oldsymbol{\mu} = \{\mu_1, \dots, \mu_K\}$ を導入します。
+今回対象とする階層モデルは、各クラスターの観測分散が1に固定され、混合比率が一様であると仮定したシンプルな1次元GMMです。$n$個の観測データ $\mathbf{x} = \{x_1, \dots, x_n\}$ に対し、潜在変数として各データの所属クラスターを示すワンホットベクトル $\mathbf{c} = \{c_1, \dots, c_n\}$ と、$K$個のクラスターの平均パラメーター $\boldsymbol{\mu} = \{\mu_1, \dots, \mu_K\}$ を導入します。
 
 完全な階層モデルは以下の式で定義されます。
 
 $$
- egin{align}
-\mu_k &\sim \mathcal{N}(0, \sigma^2), \quad & k = 1, \dots, K \
-c_i &\sim 	ext{Categorical}(1/K, \dots, 1/K), \quad & i = 1, \dots, n \
-x_i | c_i,  oldsymbol{\mu} &\sim \mathcal{N}(c_i^	op  oldsymbol{\mu}, 1), \quad & i = 1, \dots, n
-\end{align}
+\begin{aligned}
+\mu_k &\sim \mathcal{N}(0, \sigma^2), \quad & k &= 1, \dots, K \\
+c_i &\sim \text{Categorical}(1/K, \dots, 1/K), \quad & i &= 1, \dots, n \\
+x_i | c_i, \boldsymbol{\mu} &\sim \mathcal{N}(c_i^\top \boldsymbol{\mu}, 1), \quad & i &= 1, \dots, n
+\end{aligned}
 $$
 
 各設定の意図は以下の通りです。
 * **(1) クラスター平均の事前分布:** 各クラスターの平均 $\mu_k$ は、平均0、分散 $\sigma^2$ の正規分布から生成されます。$\sigma^2$ は事前分布の分散（ハイパーパラメータ）であり、原点付近への制約の強さを決定します。
 * **(2) クラスター割り当ての事前分布:** 各データ $i$ の潜在クラスター $c_i$ は、1から$K$のいずれかを等確率 $1/K$ でとります。
-* **(3) 観測モデル:** データ $x_i$ は、割り当てられたクラスターの平均値（$c_i^	op  oldsymbol{\mu} = \mu_{k}$）を持ち、分散が1に固定された正規分布から生成されます。
+* **(3) 観測モデル:** データ $x_i$ は、割り当てられたクラスターの平均値（$c_i^\top \boldsymbol{\mu} = \mu_{k}$）を持ち、分散が1に固定された正規分布から生成されます。
 
 ### 2.2 CAVIを用いた推論法
 
-ベイズ推論の目的は、観測データ $\mathbf{x}$ が与えられた下での潜在変数とパラメーターの事後分布 $p( oldsymbol{\mu}, \mathbf{c} | \mathbf{x})$ を計算することです。しかし、分母となる周辺尤度の計算が解析的に困難であるため、**変分推論（Variational Inference）** を用いて近似を行います。
+ベイズ推論の目的は、観測データ $\mathbf{x}$ が与えられた下での潜在変数とパラメーターの事後分布 $p(\boldsymbol{\mu}, \mathbf{c} | \mathbf{x})$ を計算することです。しかし、分母となる周辺尤度の計算が解析的に困難であるため、**変分推論（Variational Inference）** を用いて近似を行います。
 
-ここでは、真の事後分布を扱いやすい近似分布 $q( oldsymbol{\mu}, \mathbf{c})$ で近似し、両者のカルバック・ライブラー（KL）ダイバージェンスを最小化します。特に、潜在変数とパラメーターが互いに独立であると仮定する **平均場近似（Mean-Field Approximation）** を導入します。
+ここでは、真の事後分布を扱いやすい近似分布 $q(\boldsymbol{\mu}, \mathbf{c})$ で近似し、両者のカルバック・ライブラー（KL）ダイバージェンスを最小化します。特に、潜在変数とパラメーターが互いに独立であると仮定する **平均場近似（Mean-Field Approximation）** を導入します。
 
 $$
-q( oldsymbol{\mu}, \mathbf{c}) = \prod_{k=1}^K q(\mu_k) \prod_{i=1}^n q(c_i)
+q(\boldsymbol{\mu}, \mathbf{c}) = \prod_{k=1}^K q(\mu_k) \prod_{i=1}^n q(c_i)
 $$
 
 各因子の最適な分布は、自分以外のすべての変数の分布を固定した上で、同時分布の対数の期待値（完全条件付き分布）をとることで得られます。これを一般的な数式で表すと、ある潜在変数 $z_j$ の最適な変分分布 $q_j^*(z_j)$ は以下の更新式で与えられます。
 
 $$
-q_j^*(z_j) \propto \exp \left( \mathbb{E}_{-j} [\log p(z_j, \mathbf{z}_{-j}, \mathbf{x})] 
-ight)
+q_j^*(z_j) \propto \exp \left( \mathbb{E}_{-j} [\log p(z_j, \mathbf{z}_{-j}, \mathbf{x})] \right)
 $$
 
 ここで、$\mathbb{E}_{-j}$ は $z_j$ 以外のすべての変数 $\mathbf{z}_{-j}$ の変分分布に関する期待値を意味します。この基本性質を利用し、各変数の分布を順番に更新して目的関数（ELBO：証拠下界）を最大化していく手法が **座標上昇変分推論（CAVI）** です。
 
 本モデルにおいて、各変分パラメーターの近似分布の族は以下のようになります。
-* $q(c_i) = 	ext{Categorical}( oldsymbol{ arphi}_i)$ ： $ arphi_{ik}$ はデータ $i$ がクラスター $k$ に属する変分確率です。
+* $q(c_i) = \text{Categorical}(\boldsymbol{\varphi}_i)$ ： $\varphi_{ik}$ はデータ $i$ がクラスター $k$ に属する変分確率です。
 * $q(\mu_k) = \mathcal{N}(m_k, s_k^2)$ ： $m_k$ は事後平均、$s_k^2$ は事後分散です。
 
 ### 2.3 アルゴリズムの実行手順
 
-CAVIアルゴリズムでは、変分パラメーター $\mathbf{m} = \{m_k\}, \mathbf{s}^2 = \{s_k^2\},  oldsymbol{ arphi} = \{ arphi_{ik}\}$ を交互に更新します。
+CAVIアルゴリズムでは、変分パラメーター $\mathbf{m} = \{m_k\}, \mathbf{s}^2 = \{s_k^2\}, \boldsymbol{\varphi} = \{\varphi_{ik}\}$ を交互に更新します。
 
 **[入力]**
 観測データ $x_{1:n}$、クラスター数 $K$、事前分散 $\sigma^2$
 **[出力]**
-変分パラメーター $\mathbf{m}, \mathbf{s}^2,  oldsymbol{ arphi}$
+変分パラメーター $\mathbf{m}, \mathbf{s}^2, \boldsymbol{\varphi}$
 
 **[初期化]**
 $m_k, s_k^2$ をランダムな値で初期化します（全てのクラスターが同じ値にならないように対称性を破ります）。
 
 **[ループ更新]** ELBOが収束するまで以下を繰り返します：
 
-**Step 1: クラスター割り当て確率 $ oldsymbol{ arphi}$ の更新 (E-step 相当)**
+**Step 1: クラスター割り当て確率 $\boldsymbol{\varphi}$ の更新 (E-step 相当)**
 前述の一般的な更新式 $q_j^*(z_j) \propto \exp(\mathbb{E}_{-j}[\log p(\cdot)])$ を $c_i$ に適用すると、各データ $i \in \{1, \dots, n\}$、各クラスター $k \in \{1, \dots, K\}$ について、以下の対数尤度の期待値が導出されます。
 
 $$
- arphi_{ik} \propto \exp \left( \mathbb{E}_{q(\mu_k)} [\mu_k] x_i - rac{\mathbb{E}_{q(\mu_k)} [\mu_k^2]}{2} 
-ight)
+\varphi_{ik} \propto \exp \left( \mathbb{E}_{q(\mu_k)} [\mu_k] x_i - \frac{\mathbb{E}_{q(\mu_k)} [\mu_k^2]}{2} \right)
 $$
 
-ここで、期待値は変分パラメーターを用いて $\mathbb{E}[\mu_k] = m_k$、$\mathbb{E}[\mu_k^2] = m_k^2 + s_k^2$ と計算できます。計算後、$\sum_{k}  arphi_{ik} = 1$ となるように正規化します。
+ここで、期待値は変分パラメーターを用いて $\mathbb{E}[\mu_k] = m_k$、$\mathbb{E}[\mu_k^2] = m_k^2 + s_k^2$ と計算できます。計算後、$\sum_{k} \varphi_{ik} = 1$ となるように正規化します。
 
 **Step 2: クラスター平均パラメーター $m_k, s_k^2$ の更新 (M-step 相当)**
 同様に $\mu_k$ に対して基本更新式を適用し、各クラスター $k \in \{1, \dots, K\}$ について事後パラメーターを更新します。
 
 $$
-m_k = rac{\sum_i  arphi_{ik} x_i}{1/\sigma^2 + \sum_i  arphi_{ik}}
+m_k = \frac{\sum_i \varphi_{ik} x_i}{1/\sigma^2 + \sum_i \varphi_{ik}}
 $$
 $$
-s_k^2 = rac{1}{1/\sigma^2 + \sum_i  arphi_{ik}}
+s_k^2 = \frac{1}{1/\sigma^2 + \sum_i \varphi_{ik}}
 $$
 
-これらの更新式は、「事後精度 = 事前精度($1/\sigma^2$) + データからの精度($\sum_i  arphi_{ik}$)」というベイズ更新の基本則に則っています。観測分散が1に固定されているため、データの精度は純粋に割り当てられたデータ数（$ arphi_{ik}$ の和）となります。
+これらの更新式は、「事後精度 = 事前精度($1/\sigma^2$) + データからの精度($\sum_i \varphi_{ik}$)」というベイズ更新の基本則に則っています。観測分散が1に固定されているため、データの精度は純粋に割り当てられたデータ数（$\varphi_{ik}$ の和）となります。
 
 ---
 **💡 補足：分散の仮定と「ベイズ的オッカムの剃刀」**
