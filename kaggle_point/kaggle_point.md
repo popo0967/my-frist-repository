@@ -145,7 +145,7 @@ $$q_{ij} = \left( 1 + a \| y_i - y_j \|^{2b} \right)^{-1}$$
 t-SNEがKL情報量を用いるのに対し、UMAPは引力（近傍を近づける）と斥力（非近傍を遠ざける）のバランスを取るCross-Entropyを用いる。
 $$CE(X, Y) = \sum_{i \neq j} \left( p_{ij} \log \left( \frac{p_{ij}}{q_{ij}} \right) + (1 - p_{ij}) \log \left( \frac{1 - p_{ij}}{1 - q_{ij}} \right) \right)$$
 
-
+---
 
 ## 2. 実践における注意
 
