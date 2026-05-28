@@ -72,6 +72,8 @@ $$p_i = \frac{\text{rank}(x_i) - 1}{N - 1} \times 2 - 1$$
 $$x_{Gauss} = \Phi^{-1}\left( \frac{p_i + 1}{2} \right)$$
 （または $x_{Gauss} = \sqrt{2} \cdot \text{erf}^{-1}(p_i)$ ）
 
+---
+
 ### 1.5 Target Encoding（Cross-Validation適用）
 
 **📌 背景と理論的意義**
@@ -95,19 +97,13 @@ Box-Cox変換は、パラメータ $\lambda$ を最尤推定法により最適�
 この制約を解消したのがYeo-Johnson変換であり、入力変数に負の値やゼロが含まれる場合でも適用可能となるよう数学的な拡張が施されている。
 
 **🧮 数式表現**
-① Box-Cox変換：
-$$x^{(\lambda)} = \begin{cases} 
-\frac{x^\lambda - 1}{\lambda} & (\lambda \neq 0) \\
-\ln(x) & (\lambda = 0)
-\end{cases}$$
+### 1. Box-Cox変換
 
-② Yeo-Johnson変換：
-$$x^{(\lambda)} = \begin{cases} 
-\frac{(x + 1)^\lambda - 1}{\lambda} & (x \ge 0, \lambda \neq 0) \\
-\ln(x + 1) & (x \ge 0, \lambda = 0) \\
-\frac{-((-x + 1)^{2 - \lambda} - 1)}{2 - \lambda} & (x < 0, \lambda \neq 2) \\
--\ln(-x + 1) & (x < 0, \lambda = 2)
-\end{cases}$$
+$$x^{(\lambda)} = \begin{cases} \frac{x^\lambda - 1}{\lambda} & (\lambda \neq 0) \\ \ln(x) & (\lambda = 0) \end{cases}$$
+
+### 2. Yeo-Johnson変換
+
+$$x^{(\lambda)} = \begin{cases} \frac{(x + 1)^\lambda - 1}{\lambda} & (x \ge 0, \lambda \neq 0) \\ \ln(x + 1) & (x \ge 0, \lambda = 0) \\ \frac{-((-x + 1)^{2 - \lambda} - 1)}{2 - \lambda} & (x < 0, \lambda \neq 2) \\ -\ln(-x + 1) & (x < 0, \lambda = 2) \end{cases}$$
 
 ---
 
