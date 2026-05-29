@@ -217,6 +217,7 @@ $$\min_{g} \sum_{i=1}^N L(y_i, g(z_{i,1}, \dots, z_{i,M}))$$
 
 ---
 参考
+
 kaggleで勝つデータ分析の技術　昭和プロセス情報会社
 
 https://kntty.hateblo.jp/entry/2020/12/14/070022
