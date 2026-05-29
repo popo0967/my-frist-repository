@@ -1,10 +1,9 @@
-#  解析レポート: [kaggleで勝つために]
+#  解析レポート: [kaggle対策]
 
 ## 概要
 kaggleで勝つデータ分析の技術という本から、実践に使えそうな技術を抽出したものを、レポート的な感じでメモしていきます。
 実際のcodeに関しては、iypnbファイルに記載しておきます。
-https://kntty.hateblo.jp/entry/2020/12/14/070022
-https://qiita.com/shobioinfo/items/c242d7cdd3bcd8b1f6f8
+
 ---
 ## 1. 特徴量選択
 
@@ -214,3 +213,12 @@ $$z_{i,m} = \hat{f}_{m}^{(-k)}(x_i)$$
 
 この操作を全てのFoldと全てのモデル（$M$個）に対して行い、得られたメタ特徴量行列 $Z \in \mathbb{R}^{N \times M}$ と本来の目的変数 $Y$ を用いて、メタモデル $g$（Level 1モデル）の学習を行う。
 $$\min_{g} \sum_{i=1}^N L(y_i, g(z_{i,1}, \dots, z_{i,M}))$$
+
+
+---
+参考
+kaggleで勝つデータ分析の技術　昭和プロセス情報会社
+
+https://kntty.hateblo.jp/entry/2020/12/14/070022
+
+https://qiita.com/shobioinfo/items/c242d7cdd3bcd8b1f6f8
