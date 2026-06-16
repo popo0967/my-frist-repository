@@ -1,7 +1,7 @@
 # Transformerレポート: [Transformer]
 
 ## 概要
-本ドキュメントは、Transfoemerの論文(Attention Is All You Need,Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin)とQiitaにある【Pytorch】Transformerを実装するという記事を読んで実装したもの(実装に関してはほぼコピペしているが、論文に近くなるように少し変えている)
+本ドキュメントは、Transfoemerの論文(Attention Is All You Need,)とQiitaにある【Pytorch】Transformerを実装するという記事を読んで実装したもの(実装に関してはほぼコピペしているが、論文に近くなるように少し変えている)
 ---
 
 ## 1. データファイル:
@@ -13,6 +13,8 @@ https://nlp.ist.i.kyoto-u.ac.jp/?%E6%97%A5%E8%8B%B1%E4%B8%AD%E5%9F%BA%E6%9C%AC%E
 ## 2. Transformerモデルのアーキテクチャ
 
 Transformerは、RNNやCNNを使わず、**「Attention（注意機構）」**のみを用いて系列データを処理する強力な深層学習モデルである。主に翻訳タスクなどで用いられ、入力言語を理解する「エンコーダ」と、出力言語を生成する「デコーダ」の2つの主要コンポーネントから構成される。
+![イメージ図(Attention Is All You Needより)](gazou2.png)
+参考:Attention Is All You Need
 
 ### 2.1 Transformerの概要（各層の構成）
 
@@ -46,7 +48,6 @@ Transformerの全体像は、データの流れに沿って以下の層（ブロ
 ### 2.2 各構成モジュールの詳細解説
 
 Transformerを形作る5つの主要なモジュール（部品）について、それぞれの役割と内部のデータの動きを解説する。
-![イメージ図(Attention Is All You Needより)](gazou2.png)
 
 #### 1. Embedding層 (`nn.Embedding`)
 * **役割:** 単語の出席番号（ID）を、意味を持った密な連続値ベクトル（例：512次元）に変換する巨大な辞書（ルックアップテーブル）。
@@ -181,6 +182,7 @@ Lossは低下したものの、未知の入力に対して文脈と全く関連�
 
 
 参考
+
 https://qiita.com/gensal/items/e1c4a34dbfd0d7449099
 
 Attention Is All You Need,Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin
