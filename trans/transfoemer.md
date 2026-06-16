@@ -13,7 +13,9 @@ https://nlp.ist.i.kyoto-u.ac.jp/?%E6%97%A5%E8%8B%B1%E4%B8%AD%E5%9F%BA%E6%9C%AC%E
 ## 2. Transformerモデルのアーキテクチャ
 
 Transformerは、RNNやCNNを使わず、**「Attention（注意機構）」**のみを用いて系列データを処理する強力な深層学習モデルである。主に翻訳タスクなどで用いられ、入力言語を理解する「エンコーダ」と、出力言語を生成する「デコーダ」の2つの主要コンポーネントから構成される。
+
 ![イメージ図(Attention Is All You Needより)](gazou2.png)
+
 参考:Attention Is All You Need
 
 ### 2.1 Transformerの概要（各層の構成）
