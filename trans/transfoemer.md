@@ -1,7 +1,8 @@
 # Transformerレポート: [Transformer]
 
 ## 概要
-本ドキュメントは、Transfoemerの論文(Attention Is All You Need,Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin)とQiitaにある【Pytorch】Transformerを実装する(https://qiita.com/gensal/items/e1c4a34dbfd0d7449099)という記事を読んで実装したもの(実装に関してはほぼコピペしてもらっているが、論文に近くなるように少し変えている)
+本ドキュメントは、Transfoemerの論文(Attention Is All You Need,Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin)とQiitaにある【Pytorch】Transformerを実装する(https://qiita.com/gensal/items/e1c4a34dbfd0d7449099)
+という記事を読んで実装したもの(実装に関してはほぼコピペしてもらっているが、論文に近くなるように少し変えている)
 ---
 
 ## 1. データファイル:
@@ -46,7 +47,7 @@ Transformerの全体像は、データの流れに沿って以下の層（ブロ
 ### 2.2 各構成モジュールの詳細解説
 
 Transformerを形作る5つの主要なモジュール（部品）について、それぞれの役割と内部のデータの動きを解説する。
-![イメージ図(Attention Is All You Needより)](スクリーンショット 2026-06-16 193136)
+![イメージ図(Attention Is All You Needより)](gazou1.png)
 
 #### 1. Embedding層 (`nn.Embedding`)
 * **役割:** 単語の出席番号（ID）を、意味を持った密な連続値ベクトル（例：512次元）に変換する巨大な辞書（ルックアップテーブル）。
@@ -164,7 +165,8 @@ Transformerを形作る5つの主要なモジュール（部品）について�
 ### 学習の経過
 * **計算時間**: 約33分
 * **学習推移**: Loss自体は順調に減少する傾向が見られた。
-![実装結果のグラフ](スクリーンショット 2026-06-16 192929.png)
+![実装結果のグラフ](gazou2.png)
+
 
 ### 課題と考察
 * **データ不足**: モデルの規模に対して、データ数（`df = 5304`）が極端に少なく、汎化性能を獲得するには非常に厳しい条件であった。Lossの低下は、汎化ではなく訓練データへの過学習（Overfitting）を示唆している可能性が高い。
@@ -177,3 +179,9 @@ Transformerを形作る5つの主要なモジュール（部品）について�
 
 ### 結論
 Lossは低下したものの、未知の入力に対して文脈と全く関連のない出力が生成される状態となった。現在のデータセット規模でのモデル学習は限界があると判断される。
+
+
+参考
+https://qiita.com/gensal/items/e1c4a34dbfd0d7449099
+
+Attention Is All You Need,Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin
