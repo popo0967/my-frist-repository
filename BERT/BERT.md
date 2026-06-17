@@ -201,8 +201,10 @@ Average Train Loss: 0.0470
 Validation: 100%|██████████| 47/47 [00:04<00:00, 10.84it/s]
 Average Val Loss: 0.9287
 Validation Accuracy: 75.85%
+```
+---
 
-```text
+
 
 
 参考
