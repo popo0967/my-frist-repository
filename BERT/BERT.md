@@ -172,7 +172,7 @@ BERTのコアとなる2つの事前学習タスク（MLMとNSP）の有効性を
 
 ## 7 実装
 
-本タスクではライブドアニュースコーパスをデータセットとして使用した。事前のデータ探索（EDA）により、各カテゴリ間のデータ不均衡はさほど見られないことを確認している。
+本タスクではライブドアニュースコーパスをデータセットとして使用した。事前のデータ探索（EDA）により、各カテゴリ間のデータ不均衡はさほど見られないことを確認している(若干)。
 
 ### 7.1 モデルの制約と学習時の課題
 今回の実装においては、以下の要因から精度の向上に限界が見られる厳しいモデル構成となった。
@@ -201,3 +201,8 @@ Average Train Loss: 0.0470
 Validation: 100%|██████████| 47/47 [00:04<00:00, 10.84it/s]
 Average Val Loss: 0.9287
 Validation Accuracy: 75.85%
+
+
+参考
+
+BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding,Jacob Devlin, Ming-Wei Chang, Kenton Lee, Kristina Toutanova
