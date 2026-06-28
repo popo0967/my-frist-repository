@@ -6,10 +6,7 @@
 ---
 
 ## 1. データファイル:
-英語ニュースの要約（CNN / DailyMailデータセット）を用いて、要約に関してモデルを作成する
 
----
-ここからは論文の要約をしていく
 ---
 
 ## 2. Informer: Long-Sequence Time-Series Forecasting
@@ -21,22 +18,22 @@
 時系列データは、自然言語のように「単語の意味」を持たないため、モデルに「値の大きさ」「配列の順番」「現実世界のカレンダー」という3つの情報を同時に教え込む必要がある。Informerでは、入力系列 $\mathcal{X}^t \in \mathbb{R}^{L_x \times d_x}$ に対して、以下の3つの埋め込み（Embedding）を行い、最終的な入力ベクトル $\mathcal{X}_{feed}$ を生成する。
 
 1. **Value Embedding (値の埋め込み):**
-   生の数値データを1次元畳み込み層（Conv1d）に通し、Transformerが扱える次元数 $d_{model}$ に変換する。
+   生の数値データを1次元畳み込み層（Conv1d）に通し、Transformerが扱える次元数 $d_{model}$ に変換する。(xw+bのようにして拡張),αをdmodelの平方根として調整。
 2. **Positional Encoding (位置エンコーディング):**
    データが配列のどこにあるかを示す固定の波長ベクトル。
    $$PE_{(pos, 2j)} = \sin(pos / 10000^{2j/d_{model}})$$
+
    $$PE_{(pos, 2j+1)} = \cos(pos / 10000^{2j/d_{model}})$$
 3. **Temporal Encoding (時間特徴エンコーディング):**
    月、日、曜日、時間などのカレンダー情報を、学習可能なカテゴリカル埋め込みとしてベクトル化する。
    $$TE_{(pos)} = \sum_{i \in \{month, day, week, hour\}} \text{Embedding}_i(stamp_i)$$
 
 これらを要素ごとに足し合わせたものがエンコーダへの入力となる。
-$$\mathcal{X}_{feed} = \alpha \mathcal{X}_{en} + PE + TE$$
-（$\alpha$ はスケール調整用の係数）
+$$\mathcal{X}_{feed} = αVE + PE + TE$$
 
 **【数値例】**
 「6月28日 午前9時」の株価データ `[100, 124, 135]` が入力されたとする（$pos=0,1,2$）。
-$pos=0$ の「100」という値は、Value層で512次元のベクトルに変換される。そこに、$pos=0$ に対応する固定の $\sin, \cos$ ベクトルが足され、さらに「6月」「28日」「日曜日」「9時」という4つのカテゴリに対応する学習済みのベクトルが足し合わされ、最終的に文脈たっぷりの512次元ベクトルが完成する。
+$pos=0$ の「100」という値は、Value層で512次元のベクトルに変換される。そこに、$pos=0$ に対応する固定の $\sin, \cos$ ベクトルが足され、さらに「6月」「28日」「日曜日」「9時」という4つのカテゴリに対応する学習済みのベクトルが足し合わされ、最終的に512次元ベクトルが完成する。
 
 ### 2.2 エンコーダ層に関して
 
@@ -44,11 +41,17 @@ $pos=0$ の「100」という値は、Value層で512次元のベクトルに変�
 
 **① ProbSparse Self-Attention（Qの剪定）**
 通常のAttentionは、Query($Q$)とKey($K$)のすべての組み合わせの内積を計算するため、計算量が $O(L^2)$ となる。
+
 $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
+
 Informerは、各 $q_i$ がどれだけ「重要（アクティブ）か」を、一様分布とのKL情報量に基づく指標 $\bar{M}(q_i, K)$ で評価する。
+
 $$\bar{M}(q_i, K) = \ln \sum_{j=1}^{L_K} e^{\frac{q_i k_j^T}{\sqrt{d_k}}} - \frac{1}{L_K} \sum_{j=1}^{L_K} \frac{q_i k_j^T}{\sqrt{d_k}}$$
+
 この指標が高い（他のデータに対して強い関心を持つ）上位 $u$ 個のQueryだけを選抜して $\bar{Q}$ とし、計算を行う。
+
 $$\text{ProbAttention}(Q, K, V) = \text{softmax}\left(\frac{\bar{Q} K^T}{\sqrt{d_k}}\right) V$$
+
 選抜数 $u$ は $u = c \cdot \ln L_Q$ （$c$ は定数）に制限されるため、計算量は $O(L \ln L)$ へと劇的に削減される。
 
 **② Distilling（蒸留操作）**
