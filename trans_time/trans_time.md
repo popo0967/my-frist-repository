@@ -44,18 +44,18 @@ $pos=0$ の「100」という値は、Value層で512次元のベクトルに変�
 
 $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
 
-Informerは、各 $q_i$ がどれだけ「重要（アクティブ）か」を、一様分布とのKL情報量に基づく指標 $\bar{M}(q_i, K)$ で評価する。
+Informerは、各 $q_i$ がどれだけ「重要（アクティブ）か」を、一様分布とのKL情報量に基づく指標 $\bar{M}(q_i, K)$ で評価する。ここで取り出すのは、一部のデータのみで図る(keyを選定)
 
 $$\bar{M}(q_i, K) = \ln \sum_{j=1}^{L_K} e^{\frac{q_i k_j^T}{\sqrt{d_k}}} - \frac{1}{L_K} \sum_{j=1}^{L_K} \frac{q_i k_j^T}{\sqrt{d_k}}$$
 
-この指標が高い（他のデータに対して強い関心を持つ）上位 $u$ 個のQueryだけを選抜して $\bar{Q}$ とし、計算を行う。
+この指標が高い（他のデータに対して強い関心を持つ）上位 $u$ 個のQueryだけを選抜して $\bar{Q}$ とし、計算を行う。(選ばれQueryに全keyを掛ける)。つまり選ばれなかったQの大半は学習はされない。
 
 $$\text{ProbAttention}(Q, K, V) = \text{softmax}\left(\frac{\bar{Q} K^T}{\sqrt{d_k}}\right) V$$
 
 選抜数 $u$ は $u = c \cdot \ln L_Q$ （$c$ は定数）に制限されるため、計算量は $O(L \ln L)$ へと劇的に削減される。
 
 **② Distilling（蒸留操作）**
-Attention層の直後に、1次元のMax Pooling層を挟むことで、時間軸方向のデータサイズを半分に圧縮する。
+Attention層の直後に、1次元のMax Pooling層を挟むことで、時間軸方向のデータサイズを半分に圧縮する。FFNした後に。
 $$X_{j+1}^t = \text{MaxPool}\left( \text{ELU}\left( \text{Conv1d}( [X_j^t]_{AB} ) \right) \right)$$
 
 **【数値例】**
@@ -65,8 +65,9 @@ $L=1000$ のデータを入れた場合、通常のAttentionは $1000 \times 100
 
 デコーダは、RNNのような自己回帰（1歩ずつ予測する手法）の「遅さ」と「誤差の蓄積」を防ぐため、**Generative Style Decoder（一発出しデコーダ）**を採用している。
 
-デコーダへの入力 $\mathcal{X}_{de}$ は、既知の直近の過去データ $X_{token}$（長さ $L_{token}$）と、予測したい未来の枠を表すゼロ行列 $X_0$（長さ $L_y$）を結合したプレースホルダーである。
-$$\mathcal{X}_{de} = \text{Concat}(X_{token}, X_0) \in \mathbb{R}^{(L_{token} + L_y) \times d_{model}}$$
+デコーダへの入力 X_deは、既知の直近の過去データ X_token（長さ $L_token）と、予測したい未来の枠を表すゼロ行列 X_0（長さ L_y）を結合したプレースホルダーである。
+
+例えば、過去5日と未来30日の場合、入力時は(35,512)のようになる。ここで、次のステップで使われるのはQ(35,512)で、エンコーダのK,Vと大きさが違うことは注意
 
 デコーダ内部では、まず未来の情報をカンニングしないためのMasked Multi-head Attentionが行われ、その後、エンコーダが抽出した過去の圧縮記憶（$K, V$）と、自身の持つプレースホルダー（$Q$）をぶつけるCross-Attentionが行われる。
 最後に全結合層（Linear）を1回だけ通し、最終的な予測値 $Y_{predict}$ を出力する。
