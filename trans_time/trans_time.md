@@ -96,12 +96,16 @@ Informerが時系列モデリングの歴史にもたらした主要な特徴は
 概要としては、モデルの計算を減らすことに注力していたが、アプローチを変えてそもそも、トレンドと季節に分けて、推定していけばいいという考えのもの
 
 ![encoder-decoder](gazou1.png)
+参考:Autoformer: Decomposition Transformers with Auto-Correlation for Long-Term Series Forecasting
+
 
 ## 3.1 Autoformer エンコーダのアーキテクチャ
 
 Autoformerのエンコーダの主目的は、過去の時系列データ $\mathcal{X}$ に内在する**「真の周期性（季節成分）」を抽出し、ランダムなノイズを極限まで平滑化すること**である。標準的なTransformerのSelf-Attentionメカニズム（計算量 $\mathcal{O}(L^2)$）を廃止し、信号処理に基づく **Auto-Correlation（自己相関）** と **Series Decomposition（時系列分解）** を組み合わせることで、計算量を $\mathcal{O}(L \log L)$ に抑えつつ、時系列特有の文脈を学習する。
 
 ![encoder](gazou2.png)
+参考:Autoformer: Decomposition Transformers with Auto-Correlation for Long-Term Series Forecasting
+
 
 
 ### 3.1.1 エンコーダ $l$ 層の全体方程式
@@ -205,14 +209,14 @@ Autoformerのデコーダの目的は、過去のデータから未来の $M$ �
 
 1. **季節成分の初期入力 $\mathcal{X}_{de}^0$:**
    未来の $M$ ステップをすべて `0` で埋める。
-   $$\mathcal{X}_{de}^0 = [\mathcal{X}_{en\_tail}, \mathbf{0}_{M}]$$
+
 2. **トレンド成分の初期入力 $\mathcal{T}_{de}^0$:**
    未来の $M$ ステップを、直近の過去データの平均値（Mean）で平坦に埋める。
-   $$\mathcal{T}_{de}^0 = [\mathcal{T}_{en\_tail}, \text{Mean}(\mathcal{X}_{en\_tail})]$$
+
 
 ### 3.2.2 デコーダ $l$ 層の全体方程式
 
-$l-1$ 層から渡された季節成分 $\mathcal{X}_{de}^{l-1}$ とトレンド成分 $\mathcal{T}_{de}^{l-1}$、そしてエンコーダから引き継いだ「純度100%の過去の記憶」$\mathcal{X}_{en}^{N}$ を用いて、第 $l$ 層は以下の4つの方程式で定式化される。
+$l-1$ 層から渡された季節成分  とトレンド成分 、そしてエンコーダから引き継いだ「純度100%の過去の記憶」 を用いて、第 $l$ 層は以下の4つの方程式で定式化される。
 
 $$
 \mathcal{S}_{de}^{l, 1}, \mathcal{T}_{de}^{l, 1} = \text{SeriesDecomp}\left( \text{Auto-Correlation}(\mathcal{X}_{de}^{l-1}, \mathcal{X}_{de}^{l-1}, \mathcal{X}_{de}^{l-1}) + \mathcal{X}_{de}^{l-1} \right)
@@ -255,7 +259,7 @@ $$
 
 デコーダの仮組み波形（$Q$）を基準とし、エンコーダの膨大な過去データ（$K$）との間でFFTによる親密度計算を行う。最も相関の高い（周期が一致する）過去のラグ $\tau$ を特定し、そのラグに基づいてエンコーダの精緻な波形（$V$）をシフトさせる。
 
-この操作により、デコーダの粗い予測波形の上に、ノイズが除去された高解像度な過去の波形パターンが直接マッピング（流し込み）される。その後、再び $\text{SeriesDecomp}$ を経て、純化された季節成分 $\mathcal{S}_{de}^{l, 2}$ と、トレンドの副産物 $\mathcal{T}_{de}^{l, 2}$ に分離される。
+この操作により、デコーダの粗い予測波形の上に、ノイズが除去された高解像度な過去の波形パターンが直接マッピング（流し込み）される。その後、再び $\text{SeriesDecomp}$ を経て、純化された季節成分 と、トレンドの副産物に分離される。
 
 ---
 
@@ -263,7 +267,7 @@ $$
 
 季節ルートが $\text{FeedForward}$ を経て最終的な未来の季節予測 $\mathcal{X}_{de}^{l}$ を完成させる裏で、トレンドルートは「累積（ちりつも加算）」を行っている。
 
-エンコーダとは異なり、デコーダ内で抽出された3つのトレンド成分（$\mathcal{T}_{de}^{l, 1}, \mathcal{T}_{de}^{l, 2}, \mathcal{T}_{de}^{l, 3}$）は破棄されない。それぞれに線形変換（重み $W$）を適用し、前層から引き継いだベースのトレンド $\mathcal{T}_{de}^{l-1}$ に対して順次加算していく。
+エンコーダとは異なり、デコーダ内で抽出された3つのトレンド成分は破棄されない。それぞれに線形変換（重み W）を適用し、前層から引き継いだベースのトレンド  に対して順次加算していく。
 
 $$
 \mathcal{T}_{de}^{l} = \mathcal{T}_{de}^{l-1} + W_{l, 1} \mathcal{T}_{de}^{l, 1} + W_{l, 2} \mathcal{T}_{de}^{l, 2} + W_{l, 3} \mathcal{T}_{de}^{l, 3}
