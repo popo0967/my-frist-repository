@@ -89,7 +89,7 @@ Informerが時系列モデリングの歴史にもたらした主要な特徴は
 3. **TRANSFORMER(言語モデルとの比較):** Pre-trainingができないので、実装には時間が大幅にかかる 
 ---
 
-## 2. Autoformer:
+## 3. Autoformer:
 
 本章では、Informerの半年後に考案された、Autoformer:に関するモデルのアルゴリズムを解説する
 
@@ -100,8 +100,7 @@ Informerが時系列モデリングの歴史にもたらした主要な特徴は
 Autoformerのエンコーダの主目的は、過去の時系列データ $\mathcal{X}$ に内在する**「真の周期性（季節成分）」を抽出し、ランダムなノイズを極限まで平滑化すること**である。標準的なTransformerのSelf-Attentionメカニズム（計算量 $\mathcal{O}(L^2)$）を廃止し、信号処理に基づく **Auto-Correlation（自己相関）** と **Series Decomposition（時系列分解）** を組み合わせることで、計算量を $\mathcal{O}(L \log L)$ に抑えつつ、時系列特有の文脈を学習する。
 
 ### 3.1.1 エンコーダ $l$ 層の全体方程式
-
-$l-1$ 層からの入力（季節成分）を $\mathcal{X}_{en}^{l-1} \in \mathbb{R}^{L \times d_{model}}$ としたとき、第 $l$ 層の内部処理は以下の2つの方程式で定式化される。
+第 $l$ 層の内部処理は以下の2つの方程式で定式化される。
 
 $$
 \mathcal{S}_{en}^{l, 1}, \_ = \text{SeriesDecomp}\left( \text{Auto-Correlation}(\mathcal{X}_{en}^{l-1}, \mathcal{X}_{en}^{l-1}, \mathcal{X}_{en}^{l-1}) + \mathcal{X}_{en}^{l-1} \right)
@@ -111,7 +110,7 @@ $$
 \mathcal{X}_{en}^{l}, \_ = \text{SeriesDecomp}\left( \text{FeedForward}(\mathcal{S}_{en}^{l, 1}) + \mathcal{S}_{en}^{l, 1} \right)
 $$
 
-ここで、$\mathcal{S}_{en}^{l, 1}$ は中間表現としての季節成分を表し、抽出されたトレンド成分はエンコーダにおいては不要であるため `_` として破棄される。また、各ブロックの加算（$+$）は残差接続（Residual Connection）を示している。
+ここで、$S_en$ は中間表現としての季節成分を表し、抽出されたトレンド成分はエンコーダにおいては不要であるため `_` として破棄される。また、各ブロックの加算（+）は残差接続（Residual Connection）を示している。
 
 ---
 
@@ -136,7 +135,7 @@ $$
 \mathcal{R}_{QK} = \text{iFFT}(\mathcal{S}_{QK})
 $$
 
-ここで、$\text{FFT}(\cdot)$ は高速フーリエ変換、$*$ は複素共役、$\odot$ は要素ごとのアダマール積、$\text{iFFT}(\cdot)$ は逆高速フーリエ変換である。得られた $\mathcal{R}_{QK}$ は各ズレ幅 $\tau \in \{1, 2, \dots, L\}$ における周期性の強さ（スコア）の配列となる。
+ここで、$\text{FFT}(\cdot)$ は高速フーリエ変換、* は複素共役、dot は要素ごとのアダマール積、iFFT$ は逆高速フーリエ変換である。得られた $\mathcal{R}_{QK}$ は各ズレ幅 $\tau \in \{1, 2, \dots, L\}$ における周期性の強さ（スコア）の配列となる。
 
 #### ③ Time Delay Aggregation（遅延合成）
 計算されたスコア $\mathcal{R}_{QK}$ をもとに、上位 $k$ 個（$k = c \log L$）のラグ $\tau_1, \tau_2, \dots, \tau_k$ を選出する。選ばれたラグの分だけ実体データ $V$ を時間軸に沿ってシフト（Roll）させ、Softmaxで正規化した重みを用いて加重平均をとる。
@@ -185,7 +184,7 @@ $$
 
 FFNを通過したのち、再び残差接続と SeriesDecomp を経ることで、FFNによる非線形変換で生じた微小なトレンド歪みを完全に除去する。
 
-以上の $l$ 層における一連の処理を $N$ 回（$l = 1, \dots, N$）繰り返すことで、エンコーダは最終出力 $\mathcal{X}_{en}^{N} \in \mathbb{R}^{L \times d_{model}}$ を生成する。このテンソルは、過去の入力時系列から一切のトレンドとノイズが削ぎ落とされた**「純度100%の過去の周期記憶」**として、デコーダの Cross Auto-Correlation 層へと引き継がれる。
+以上の $l$ 層における一連の処理を $N$ 回繰り返すことで、エンコーダは最終出力 を生成する。このテンソルは、過去の入力時系列から一切のトレンドとノイズが削ぎ落とされた**「純度100%の過去の周期記憶」**として、デコーダの Cross Auto-Correlation 層へと引き継がれる。
 
 
 
