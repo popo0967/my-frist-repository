@@ -2,7 +2,10 @@
 
 ## 概要
 本ドキュメントは、Transformerによる時系列予測に関して、3つの手法で学習してみます。
-論文は以下を参考にしています
+論文は以下を参考にしています。
+Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting
+
+Autoformer: Decomposition Transformers with Auto-Correlation for Long-Term Series Forecasting
 ---
 
 ## 1. データファイル:
@@ -48,7 +51,7 @@ Informerは、各 $q_i$ がどれだけ「重要（アクティブ）か」を�
 
 $$\bar{M}(q_i, K) = \ln \sum_{j=1}^{L_K} e^{\frac{q_i k_j^T}{\sqrt{d_k}}} - \frac{1}{L_K} \sum_{j=1}^{L_K} \frac{q_i k_j^T}{\sqrt{d_k}}$$
 
-この指標が高い（他のデータに対して強い関心を持つ）上位 $u$ 個のQueryだけを選抜して $\bar{Q}$ とし、計算を行う。(選ばれQueryに全keyを掛ける)。つまり選ばれなかったQの大半は学習はされない。
+この指標が高い（他のデータに対して強い関心を持つ）上位 $u$ 個のQueryだけを選抜して $\bar{Q}$ とし、計算を行う。(選ばれQueryに全keyを掛ける)。つまり選ばれなかったQの大半は学習はされない。選ばれないところは平均値で埋める。
 
 $$\text{ProbAttention}(Q, K, V) = \text{softmax}\left(\frac{\bar{Q} K^T}{\sqrt{d_k}}\right) V$$
 
@@ -78,8 +81,147 @@ $L=1000$ のデータを入れた場合、通常のAttentionは $1000 \times 100
 
 ### 2.4 特徴（まとめ）
 
-Informerが時系列モデリングの歴史にもたらした主要な特徴は以下の3点に集約される。
+Informerが時系列モデリングの歴史にもたらした主要な特徴は以下の4点に集約される。ここには書いていないが、大前提としてかなり大きなデータセットが必要である。
 
 1. **$O(L \ln L)$ への計算量削減:** ProbSparse AttentionとDistillingの組み合わせにより、長期間の過去データをメモリを枯渇させることなく入力できるようになった。
 2. **時間的セマンティクスの完全な統合:** Temporal Encodingにより、現実世界のカレンダー情報（曜日や時間帯による周期性）をディープラーニングの重み空間にマッピングすることに成功した。
 3. **誤差蓄積の回避と高速推論:** Generative Style Decoderにより、長期間の未来予測を一回の順伝播（Forward pass）で完結させ、推論速度と安定性を飛躍的に向上させた。
+3. **TRANSFORMER(言語モデルとの比較):** Pre-trainingができないので、実装には時間が大幅にかかる 
+---
+
+## 2. Autoformer:
+
+本章では、Informerの半年後に考案された、Autoformer:に関するモデルのアルゴリズムを解説する
+
+概要としては、モデルの計算を減らすことに注力していたが、アプローチを変えてそもそも、トレンドと季節に分けて、推定していけばいいという考えのもの
+
+## 3.1 Autoformer エンコーダのアーキテクチャ
+
+Autoformerのエンコーダの主目的は、過去の時系列データ $\mathcal{X}$ に内在する**「真の周期性（季節成分）」を抽出し、ランダムなノイズを極限まで平滑化すること**である。標準的なTransformerのSelf-Attentionメカニズム（計算量 $\mathcal{O}(L^2)$）を廃止し、信号処理に基づく **Auto-Correlation（自己相関）** と **Series Decomposition（時系列分解）** を組み合わせることで、計算量を $\mathcal{O}(L \log L)$ に抑えつつ、時系列特有の文脈を学習する。
+
+### 3.1.1 エンコーダ $l$ 層の全体方程式
+
+$l-1$ 層からの入力（季節成分）を $\mathcal{X}_{en}^{l-1} \in \mathbb{R}^{L \times d_{model}}$ としたとき、第 $l$ 層の内部処理は以下の2つの方程式で定式化される。
+
+$$
+\mathcal{S}_{en}^{l, 1}, \_ = \text{SeriesDecomp}\left( \text{Auto-Correlation}(\mathcal{X}_{en}^{l-1}, \mathcal{X}_{en}^{l-1}, \mathcal{X}_{en}^{l-1}) + \mathcal{X}_{en}^{l-1} \right)
+$$
+
+$$
+\mathcal{X}_{en}^{l}, \_ = \text{SeriesDecomp}\left( \text{FeedForward}(\mathcal{S}_{en}^{l, 1}) + \mathcal{S}_{en}^{l, 1} \right)
+$$
+
+ここで、$\mathcal{S}_{en}^{l, 1}$ は中間表現としての季節成分を表し、抽出されたトレンド成分はエンコーダにおいては不要であるため `_` として破棄される。また、各ブロックの加算（$+$）は残差接続（Residual Connection）を示している。
+
+---
+
+### 3.1.2 Auto-Correlation（自己相関）メカニズム
+
+このブロックは、波形をシフトさせながら自己類似度を測り、周期性を増幅させる役割を担う。処理は以下の3つのステップに分解される。
+
+#### ① 特徴量テンソルの生成
+入力 $\mathcal{X}_{en}^{l-1}$ に対して、学習可能な重み行列 $W_Q, W_K, W_V$ を用いて Query、Key、Value を生成する。これらはすべて同じ入力から派生した同じサイズのテンソルである。
+
+$$
+Q = \mathcal{X}_{en}^{l-1} W_Q, \quad K = \mathcal{X}_{en}^{l-1} W_K, \quad V = \mathcal{X}_{en}^{l-1} W_V
+$$
+
+#### ② ウィーナー＝ヒンチン定理による周期の発見
+時間領域における遅延（ラグ） $\tau$ ごとの自己相関 $\mathcal{R}_{QK}(\tau)$ を、高速フーリエ変換（FFT）を用いて計算する。周波数領域での共役複素数の積（畳み込み定理の応用）により、すべてのズレ幅のスコアを $\mathcal{O}(L \log L)$ で一括計算する。
+
+$$
+\mathcal{S}_{QK} = \text{FFT}(Q) \odot \text{FFT}(K)^*
+$$
+$$
+\mathcal{R}_{QK} = \text{iFFT}(\mathcal{S}_{QK})
+$$
+
+ここで、$\text{FFT}(\cdot)$ は高速フーリエ変換、$*$ は複素共役、$\odot$ は要素ごとのアダマール積、$\text{iFFT}(\cdot)$ は逆高速フーリエ変換である。得られた $\mathcal{R}_{QK}$ は各ズレ幅 $\tau \in \{1, 2, \dots, L\}$ における周期性の強さ（スコア）の配列となる。
+
+#### ③ Time Delay Aggregation（遅延合成）
+計算されたスコア $\mathcal{R}_{QK}$ をもとに、上位 $k$ 個（$k = c \log L$）のラグ $\tau_1, \tau_2, \dots, \tau_k$ を選出する。選ばれたラグの分だけ実体データ $V$ を時間軸に沿ってシフト（Roll）させ、Softmaxで正規化した重みを用いて加重平均をとる。
+
+$$
+\hat{\mathcal{R}}_{QK}(\tau_i) = \text{Softmax}(\mathcal{R}_{QK}(\tau_i))
+$$
+$$
+\text{Auto-Correlation}(Q, K, V) = \sum_{i=1}^{k} \hat{\mathcal{R}}_{QK}(\tau_i) \odot \text{Roll}(V, \tau_i)
+$$
+
+この操作により、ランダムなノイズが相殺され、真の周期パターンのみが抽出・強化されたテンソル（$\text{new\_V}$）が出力される。
+
+---
+
+### 3.1.3 Series Decomposition（時系列分解）
+
+Transformerにおける Layer Normalization の代替として機能する、時系列特有の正規化・分解ブロックである。入力テンソル $\mathcal{X}$ を、移動平均（Moving Average）を用いてトレンド成分 $\mathcal{X}_t$ と季節成分 $\mathcal{X}_s$ に分離する。
+
+窓幅 $k$ の平均化プーリング（$\text{AvgPool}$）を用いて、波形の局所的なベースライン（トレンド）を抽出する。
+
+$$
+\mathcal{X}_t = \text{AvgPool}(\mathcal{X})
+$$
+
+その後、元の波形からトレンド成分を減算することで、ベースラインが $0$ に補正された純粋な季節成分（ギザギザの波形）を得る。
+
+$$
+\mathcal{X}_s = \mathcal{X} - \mathcal{X}_t
+$$
+$$
+\text{SeriesDecomp}(\mathcal{X}) = (\mathcal{X}_s, \mathcal{X}_t)
+$$
+
+エンコーダにおいては、出力 $(\mathcal{X}_s, \mathcal{X}_t)$ のうち、トレンド成分 $\mathcal{X}_t$ は未来予測に不要なノイズとして破棄され、季節成分 $\mathcal{X}_s$ のみが次へと伝播する。
+
+---
+
+### 3.1.4 Feed-Forward Network (FFN) と最終出力
+
+自己相関と1回目の分解を経た季節成分 $\mathcal{S}_{en}^{l, 1}$ は、位置ごとの特徴表現を深めるために、2層の全結合層と活性化関数からなる Feed-Forward Network に入力される。
+
+$$
+\text{FeedForward}(x) = \text{Activation}(x W_1 + b_1) W_2 + b_2
+$$
+
+FFNを通過したのち、再び残差接続と SeriesDecomp を経ることで、FFNによる非線形変換で生じた微小なトレンド歪みを完全に除去する。
+
+以上の $l$ 層における一連の処理を $N$ 回（$l = 1, \dots, N$）繰り返すことで、エンコーダは最終出力 $\mathcal{X}_{en}^{N} \in \mathbb{R}^{L \times d_{model}}$ を生成する。このテンソルは、過去の入力時系列から一切のトレンドとノイズが削ぎ落とされた**「純度100%の過去の周期記憶」**として、デコーダの Cross Auto-Correlation 層へと引き継がれる。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+参考
+Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting,Haoyi Zhou, Shanghang Zhang, Jieqi Peng, Shuai Zhang, Jianxin Li, Hui Xiong, Wancai Zhang
+
+Autoformer: Decomposition Transformers with Auto-Correlation for Long-Term Series Forecasting,Haixu Wu, Jiehui Xu, Jianmin Wang, Mingsheng Long
