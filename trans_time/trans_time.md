@@ -12,7 +12,7 @@ Autoformer: Decomposition Transformers with Auto-Correlation for Long-Term Serie
 
 ---
 
-## 2. Informer: Long-Sequence Time-Series Forecasting
+# 2. Informer: Long-Sequence Time-Series Forecasting
 
 本章では、時系列予測においてTransformerの限界（$O(L^2)$の計算量）を突破し、長期間予測（LSTF）を可能にした画期的なモデル「Informer」の構造とメカニズムについて、数式と具体例を交えて解説する。
 
@@ -89,7 +89,7 @@ Informerが時系列モデリングの歴史にもたらした主要な特徴は
 3. **TRANSFORMER(言語モデルとの比較):** Pre-trainingができないので、実装には時間が大幅にかかる 
 ---
 
-## 3. Autoformer:
+#  Autoformer:
 
 本章では、Informerの半年後に考案された、Autoformer:に関するモデルのアルゴリズムを解説する
 
@@ -292,19 +292,123 @@ Autoformerは、自然言語処理向けに作られたTransformerの構造を�
 
 本論文が提示した主要なブレイクスルーと特徴は、以下の3点に集約される。
 
-### 1. 複雑な時系列を解き明かす「深層時系列分解（Deep Series Decomposition）」
+### 3.3.1. 複雑な時系列を解き明かす「深層時系列分解（Deep Series Decomposition）」
 従来のモデルが時系列データを「単なる数字の羅列」として扱っていたのに対し、Autoformerは内部に移動平均ブロック（`SeriesDecomp`）を組み込み、**トレンド成分と季節成分を分離して処理するデュアルパス構造**を実現した。
 これにより、デコーダの最終出力において「全体の傾向（トレンド）」と「周期的な変動（季節）」がそれぞれ独立した根拠として出力される。これは予測精度の向上だけでなく、**「AIがなぜその予測をしたのか」という解釈可能性（Interpretability）を飛躍的に高める**という、実運用において極めて重要な利点をもたらしている。
 
-### 2. 「点」から「波」へのパラダイムシフト（Auto-Correlation）
+### 3.3.2. 「点」から「波」へのパラダイムシフト（Auto-Correlation）
 標準的なSelf-Attentionメカニズムは、系列内の「点（各タイムステップ）」同士の関連度を総当たりで計算するため、ノイズに弱く、情報の集約に限界があった。
 Autoformerはこれを廃止し、ウィーナー＝ヒンチン定理とFFT（高速フーリエ変換）に基づく **Auto-Correlation（自己相関）** を導入した。これにより、点同士ではなく**「波（サブシリーズ）全体」のレベルでパターンの親密度を測り、真の周期性をあぶり出して合成する**という、信号処理的に極めて理にかなった情報抽出を可能にした。
 
-### 3. 計算量 $\mathcal{O}(L \log L)$ による長期予測（LSTF）の実現
+### 3.3.3 計算量 $\mathcal{O}(L \log L)$ による長期予測（LSTF）の実現
 FFTの分割統治法を利用することで、Attentionが抱えていた計算量とメモリ使用量の爆発（$\mathcal{O}(L^2)$）を $\mathcal{O}(L \log L)$ へと劇的に削減した。
 さらに、自己相関による強力なノイズ除去と、トレンドのちりつも累積によって誤差の増幅を防いだ結果、従来モデル（InformerやLogSparse Transformerなど）と比較して、**Long-term Time Series Forecasting（長期時系列予測）のタスクにおいて最先端（State-of-the-Art）の精度を達成**した。
 
 結論として、Autoformerは深層学習に古典的な信号処理の知見を美しく融合させることで、長期間の複雑な時系列データに対しても、高速かつ高精度、そして解釈可能な予測を行うための新しいスタンダードを確立したと言える。
+
+また、基本的にInformerよりもAutoformerのほうが圧倒的に精度が良く、完全に「中長期的（Long-term）」な予測に特化したモデルになっている。
+
+---
+
+# 4. A TIME SERIES IS WORTH 64 WORDS:　LONG-TERM FORECASTING WITH TRANSFORMERS
+
+本章では、よりモデルを簡単に、そして構造をわかりやすくし、計算量も圧倒的に減らしたモデル PatchTSTに関して説明する。
+
+## 4.1 PatchTSTの良さ（革新性と強み）
+
+PatchTSTが、InformerやAutoformerといった過去のSOTAモデルを打ち破り、時系列予測の覇権を握った理由は、その「圧倒的なシンプルさ」と「物理的な計算量の圧縮」にある。本手法の革新性と強みは、以下の4点に集約される。
+
+### 4.1.1 局所的な意味（Local Semantic）の獲得
+従来のモデルは時系列の「1時点」を1つの入力単位（トークン）としていたが、これでは単なるノイズと真の変化の区別が難しい。PatchTSTは複数ステップをまとめた「パッチ」を1トークンとすることで、自然言語における「単語」のように、波の局所的なトレンドや周期性といった「意味のある文脈」をTransformerに直接学習させることができる。
+
+### 4.1.2. 計算量とメモリの劇的な削減
+過去の系列長 $L$ をパッチ長 $P$ で分割することで、Transformerに入力されるトークン数 $N$ は約 $L/P$ に激減する。Attentionメカニズムの計算量はトークン数の2乗に比例するため、計算量は $\mathcal{O}(L^2)$ から $\mathcal{O}((L/P)^2)$ へと物理的に圧縮される。これにより、Informer（確率論）やAutoformer（FFT）のような複雑な回避策を用いずとも、過去の超長期データを直接Transformerに入力することが可能になった。
+
+### 4.1.3. チャネル独立性（Channel-Independence）によるロバスト性の向上
+多変量データを1つのベクトルに混ぜて入力する従来手法（Channel-Dependent）は、一見すると変数間の相関を学習できそうに見えるが、実際にはチャネル間のノイズ干渉を引き起こし、予測精度を低下させる原因となっていた。すべての変数を独立した単変量として処理することで、純粋な時間的なダイナミクスのみに集中でき、学習の安定性と精度が飛躍的に向上した。
+
+### 4.1.4 デコーダ不要の圧倒的シンプルさ
+時系列分解（Decomp）層や、未来をゼロ埋めしてCross Attentionを行う複雑なデコーダ構造を完全に廃止した。純粋な「バニラTransformerエンコーダ」のみで構成されているため、実装が極めて容易でありながら、モデルの表現力を最大限に引き出すことに成功している。
+
+---
+
+## 4.2 PatchTSTの内部アーキテクチャと完全な数式モデル
+
+PatchTSTの内部処理は、テンソルの「形状（次元）」の巧みな操作によって構築されている。入力から最終的な未来予測が出力されるまでの完全な数式モデルを以下に定式化する。
+
+### ① 入力とチャネルの独立化（Channel-Independence）
+過去のルックバックウィンドウ長を $L$、予測したい未来の長さを $T$、多変量時系列のチャネル数を $M$ とする。
+初期入力テンソル $\mathcal{X}_{in} \in \mathbb{R}^{M \times L}$ を、$M$ 個の独立した単変量時系列ベクトル $x^{(i)}$ に分割する。
+
+$$
+x^{(i)} \in \mathbb{R}^{1 \times L} \quad (i = 1, 2, \dots, M)
+$$
+
+以降の計算は、すべてのチャネル $i$ に対して全く同じ重みパラメータを共有しながら並列に行われる。
+
+### ② パッチ化（Patching）
+長さ $L$ の単変量時系列 $x^{(i)}$ を、パッチ長 $P$、ストライド $S$ で分割し、2次元のパッチ群テンソル $x_p^{(i)}$ へと変換（Unfold）する。
+
+$$
+x_p^{(i)} \in \mathbb{R}^{N \times P}
+$$
+
+ここで、生成されるパッチ（トークン）の総数 $N$ は以下の式で定まる。
+
+$$
+N = \left\lfloor \frac{L - P}{S} \right\rfloor + 1
+$$
+
+### ③ 埋め込みと位置エンコーディング（Projection & Position Embedding）
+各パッチ（次元 $P$）を、Transformerの隠れ層の次元 $D$ へと線形射影（Linear Projection）する。このとき、学習可能な重み行列 $W \in \mathbb{R}^{P \times D}$ とバイアス $b \in \mathbb{R}^{D}$ を用いる。
+
+$$
+X_d^{(i)} = x_p^{(i)} W + b \quad \in \mathbb{R}^{N \times D}
+$$
+
+さらに、各パッチの時系列的な順序をモデルに認識させるため、学習可能な位置エンコーディング行列 $W_{pos} \in \mathbb{R}^{N \times D}$ を加算し、エンコーダへの最終入力 $\mathcal{Z}_0^{(i)}$ を作成する。
+
+$$
+\mathcal{Z}_0^{(i)} = X_d^{(i)} + W_{pos} \quad \in \mathbb{R}^{N \times D}
+$$
+
+### ④ Transformerエンコーダ（Multi-Head Attention）
+$\mathcal{Z}_0^{(i)}$ を、標準的なTransformerエンコーダ（$l = 1, \dots, K$ 層）に入力する。各層ではパッチ同士の親密度を測る Multi-Head Attention と Feed-Forward Network が適用される。
+エンコーダの層における Attention 計算は以下のように定式化される。
+
+$$
+Q = \mathcal{Z}_{l-1}^{(i)} W_Q, \quad K = \mathcal{Z}_{l-1}^{(i)} W_K, \quad V = \mathcal{Z}_{l-1}^{(i)} W_V
+$$
+
+$$
+\text{Attention}(Q, K, V) = \text{Softmax}\left(\frac{Q K^T}{\sqrt{D_k}}\right) V
+$$
+
+すべての層を通過したのち、入力時と同じ形状のテンソル $\mathcal{Z}_{out}^{(i)}$ が出力される。
+
+$$
+\mathcal{Z}_{out}^{(i)} \in \mathbb{R}^{N \times D}
+$$
+
+### ⑤ 平坦化と線形予測ヘッド（Flatten + Linear Head）
+エンコーダから出力されたテンソルを1次元ベクトルに平坦化（Flatten）する。
+
+$$
+Z_{flat}^{(i)} = \text{Flatten}(\mathcal{Z}_{out}^{(i)}) \quad \in \mathbb{R}^{1 \times (N \cdot D)}
+$$
+
+この平坦化されたベクトルを、一回の線形変換（Linear Head）によって直接未来の $T$ ステップの予測値へと射影する。重み行列 $W_{head} \in \mathbb{R}^{(N \cdot D) \times T}$ とバイアス $b_{head} \in \mathbb{R}^{T}$ を用いる。
+
+$$
+\hat{x}^{(i)} = Z_{flat}^{(i)} W_{head} + b_{head} \quad \in \mathbb{R}^{1 \times T}
+$$
+
+### ⑥ 出力の統合（Concatenation）
+最後に、独立して予測された $M$ 個の単変量未来予測ベクトル $\hat{x}^{(i)}$ をチャネル方向に結合（Concatenate）し、最終的な多変量予測テンソル $\hat{\mathcal{X}}_{predict}$ を得る。
+
+$$
+\hat{\mathcal{X}}_{predict} = \text{Concat}(\hat{x}^{(1)}, \hat{x}^{(2)}, \dots, \hat{x}^{(M)}) \quad \in \mathbb{R}^{M \times T}
+$$
 
 
 
