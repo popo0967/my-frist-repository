@@ -440,6 +440,7 @@ $$
 （※ $M$ はマスクされたパッチのインデックス集合）
 
 この過酷な復元タスクを通じて、モデルは時系列特有の「トレンドの連続性」や「周期の法則」を根本から獲得する。この事前学習済みモデルを特定の予測タスクにファインチューニングすることで、ゼロから学習するよりも圧倒的に高い精度と学習の早期収束を実現できる。
+簡単な実装をこのモデルに対しては行った。
 
 ---
 
@@ -486,3 +487,5 @@ PatchTSTのアーキテクチャは極めてシンプルであるため、計算
 Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting,Haoyi Zhou, Shanghang Zhang, Jieqi Peng, Shuai Zhang, Jianxin Li, Hui Xiong, Wancai Zhang
 
 Autoformer: Decomposition Transformers with Auto-Correlation for Long-Term Series Forecasting,Haixu Wu, Jiehui Xu, Jianmin Wang, Mingsheng Long
+
+A TIME SERIES IS WORTH 64 WORDS:LONG-TERM FORECASTING WITH TRANSFORMERS,Yuqi Nie1∗, Nam H. Nguyen2 ∗, Phanwadee Sinthong2, Jayant Kalagnanam2 1Princeton University 2IBM Research
