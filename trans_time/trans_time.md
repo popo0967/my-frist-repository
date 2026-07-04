@@ -336,9 +336,12 @@ PatchTSTが、InformerやAutoformerといった過去のSOTAモデルを打ち�
 
 PatchTSTの内部処理は、テンソルの「形状（次元）」の巧みな操作によって構築されている。入力から最終的な未来予測が出力されるまでの完全な数式モデルを以下に定式化する。
 
+![encoder](gaozu3.png)
+
+
 ### ① 入力とチャネルの独立化（Channel-Independence）
-過去のルックバックウィンドウ長を $L$、予測したい未来の長さを $T$、多変量時系列のチャネル数を $M$ とする。
-初期入力テンソル $\mathcal{X}_{in} \in \mathbb{R}^{M \times L}$ を、$M$ 個の独立した単変量時系列ベクトル $x^{(i)}$ に分割する。
+過去のルックバックウィンドウ長を $L$、予測したい未来の長さを $T$、多変量時系列のチャネル数を Mとする。
+初期入力テンソル $\mathcal{X}_{in} \in \mathbb{R}^{M \times L}$ を、M 個の独立した単変量時系列ベクトル $x^{(i)}$ に分割する。
 
 $$
 x^{(i)} \in \mathbb{R}^{1 \times L} \quad (i = 1, 2, \dots, M)
@@ -373,7 +376,7 @@ $$
 $$
 
 ### ④ Transformerエンコーダ（Multi-Head Attention）
-$\mathcal{Z}_0^{(i)}$ を、標準的なTransformerエンコーダ（$l = 1, \dots, K$ 層）に入力する。各層ではパッチ同士の親密度を測る Multi-Head Attention と Feed-Forward Network が適用される。
+$\mathcal{Z}_0^{(i)}$ を、標準的なTransformerエンコーダ（K層）に入力する。各層ではパッチ同士の親密度を測る Multi-Head Attention と Feed-Forward Network が適用される。
 エンコーダの層における Attention 計算は以下のように定式化される。
 
 $$
